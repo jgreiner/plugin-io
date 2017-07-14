@@ -87,14 +87,21 @@ class SearchItems implements ItemLoaderContract, ItemLoaderPaginationContract, I
         
         if(array_key_exists('query', $options) && strlen($options['query']))
         {
-            $searchType = ElasticSearch::SEARCH_TYPE_FUZZY;
-            if(array_key_exists('autocomplete', $options) && $options['autocomplete'] === true)
+            if(is_numeric($options['query']))
             {
-                $searchFilter->setNamesString($options['query'], $lang);
+                $variationFilter->hasItemId($options['query']);
             }
             else
             {
-                $searchFilter->setSearchString($options['query'], $lang, $searchType, ElasticSearch::AND_OPERATOR);
+                $searchType = ElasticSearch::SEARCH_TYPE_FUZZY;
+                if(array_key_exists('autocomplete', $options) && $options['autocomplete'] === true)
+                {
+                    $searchFilter->setNamesString($options['query'], $lang);
+                }
+                else
+                {
+                    $searchFilter->setSearchString($options['query'], $lang, $searchType, ElasticSearch::AND_OPERATOR);
+                }
             }
         }
     
