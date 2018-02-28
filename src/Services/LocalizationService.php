@@ -7,13 +7,16 @@ use IO\Services\CountryService;
 use IO\Services\WebstoreConfigurationService;
 use IO\Services\CheckoutService;
 use Plenty\Modules\Frontend\Services\LocaleService;
+use Plenty\Plugin\ConfigRepository;
 use Plenty\Plugin\Data\Contracts\Resources;
 
 class LocalizationService
 {
-    public function __construct()
+
+    private $configRepository;
+    public function __construct(ConfigRepository $configRepository)
     {
-        
+        $this->configRepository = $configRepository;
     }
 
     public function getLocalizationData()
@@ -59,8 +62,9 @@ class LocalizationService
         /** @var Resources $resource */
         $resource = pluginApp( Resources::class );
         $res = $resource->load( "$plugin::lang/$lang/$group" )->getData();
-        if($plugin === 'Ceres' && $group === 'Template'){
-            return array_merge($res, $resource->load("OthelloTheme::lang/$lang/Template")->getData());
+        $providerPlugin = $this->configRepository->get('IO.template.template_provider_plugin_name');
+        if($providerPlugin && $plugin === 'Ceres' && $group === 'Template'){
+            return array_merge($res, $resource->load("$providerPlugin::lang/$lang/Template")->getData());
         }
 
         return $res;
