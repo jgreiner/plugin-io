@@ -11,7 +11,7 @@
     "key"       : "template.template_provider_plugin_name",
     "label"     : "Namespace of the used provider template plugin",
     "type"      : "text",
-    "default"   : "Ceres"
+    "default"   : ""
   },
   {
     "tab"       : "Number formats",
