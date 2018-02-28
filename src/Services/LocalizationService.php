@@ -58,7 +58,11 @@ class LocalizationService
 
         /** @var Resources $resource */
         $resource = pluginApp( Resources::class );
+        $res = $resource->load( "$plugin::lang/$lang/$group" )->getData();
+        if($plugin === 'Ceres' && $group === 'Template'){
+            return array_merge($res, $resource->load("OthelloTheme::lang/$lang/Template")->getData());
+        }
 
-        return $resource->load( "$plugin::lang/$lang/$group" )->getData();
+        return $res;
     }
 }
