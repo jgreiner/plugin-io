@@ -62,8 +62,10 @@ class LocalizationService
         /** @var Resources $resource */
         $resource = pluginApp( Resources::class );
         $res = $resource->load( "$plugin::lang/$lang/$group" )->getData();
-        $providerPlugin = $this->configRepository->get('IO.template.template_provider_plugin_name');
-        if($providerPlugin && $plugin === 'Ceres' && $group === 'Template'){
+        $conf = $this->configRepository->get('IO.template');
+        $providerPlugin = $conf['template_provider_plugin_name'];
+        $disabled = $conf['disable_language_merge'];
+        if($disabled != 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template'){
             return array_merge($res, $resource->load("$providerPlugin::lang/$lang/Template")->getData());
         }
 
