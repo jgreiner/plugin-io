@@ -7,6 +7,13 @@
     "default"   : "Ceres"
   },
   {
+    "tab"       : "Template",
+    "key"       : "template.template_provider_plugin_name",
+    "label"     : "Namespace of the used provider template plugin",
+    "type"      : "text",
+    "default"   : ""
+  },
+  {
     "tab"       : "Number formats",
     "key"       : "format.number_decimals",
     "label"     : "Number of decimal places",

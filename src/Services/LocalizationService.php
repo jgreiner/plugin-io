@@ -7,39 +7,41 @@ use IO\Services\CountryService;
 use IO\Services\WebstoreConfigurationService;
 use IO\Services\CheckoutService;
 use Plenty\Modules\Frontend\Services\LocaleService;
+use Plenty\Plugin\ConfigRepository;
 use Plenty\Plugin\Data\Contracts\Resources;
 
 class LocalizationService
 {
-    public function __construct()
+
+    private $configRepository;
+
+    public function __construct(ConfigRepository $configRepository)
     {
-        
+        $this->configRepository = $configRepository;
     }
 
     public function getLocalizationData()
     {
         $sessionStorage = pluginApp(SessionStorageService::class);
-        $country        = pluginApp(CountryService::class);
+        $country = pluginApp(CountryService::class);
         $webstoreConfig = pluginApp(WebstoreConfigurationService::class);
-        $checkout       = pluginApp(CheckoutService::class);
+        $checkout = pluginApp(CheckoutService::class);
 
         $lang = $sessionStorage->getLang();
-        if(is_null($lang) || !strlen($lang))
-        {
+        if (is_null($lang) || !strlen($lang)) {
             $lang = 'de';
         }
 
         $currentShippingCountryId = $checkout->getShippingCountryId();
-        if($currentShippingCountryId <= 0)
-        {
+        if ($currentShippingCountryId <= 0) {
             $currentShippingCountryId = $webstoreConfig->getDefaultShippingCountryId();
         }
 
         return [
-            'activeShippingCountries'  => $country->getActiveCountriesList($lang),
-            'activeShopLanguageList'   => $webstoreConfig->getActiveLanguageList(),
+            'activeShippingCountries' => $country->getActiveCountriesList($lang),
+            'activeShopLanguageList' => $webstoreConfig->getActiveLanguageList(),
             'currentShippingCountryId' => $currentShippingCountryId,
-            'shopLanguage'             => $lang
+            'shopLanguage' => $lang
         ];
     }
 
@@ -49,24 +51,34 @@ class LocalizationService
         $localeService->setLanguage($newLanguage, $fireEvent);
     }
 
-    public function getTranslations( string $plugin, string $group, $lang = null )
+    public function getTranslations(string $plugin, string $group, $lang = null)
     {
-        if ( $lang === null )
-        {
+        if ($lang === null) {
             $lang = pluginApp(SessionStorageService::class)->getLang();
         }
 
         /** @var Resources $resource */
-        $resource = pluginApp( Resources::class );
+        $resource = pluginApp(Resources::class);
 
-        try
-        {
-            return $resource->load( "$plugin::lang/$lang/$group" )->getData();
-        }
-        catch( \Exception $e )
-        {
+        try {
+            $default = $resource->load("$plugin::lang/$lang/$group")->getData();
+        } catch (\Exception $e) {
             // TODO: get fallback language from webstore configuration
-            return $resource->load( "$plugin::lang/en/$group")->getData();
+            $default = $resource->load("$plugin::lang/en/$group")->getData();
         }
+        $conf = $this->configRepository->get('IO.template');
+        $providerPlugin = $conf['template_provider_plugin_name'];
+        $disabled = $conf['disable_language_merge'];
+        if ($disabled != 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
+            try {
+                $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
+            } catch (\Exception $e) {
+                // TODO: get fallback language from webstore configuration
+                $overwrite = $resource->load("$plugin::lang/en/$group")->getData();
+            }
+            return array_merge($default, $overwrite);
+        }
+
+        return $default;
     }
 }
