@@ -51,10 +51,28 @@ class LocalizationService
         $localeService->setLanguage($newLanguage, $fireEvent);
     }
 
+    /**
+     * @param string $plugin
+     * @param string $group
+     * @param null|string $lang
+     * @return array
+     */
     public function getTranslations(string $plugin, string $group, $lang = null)
     {
+
+        $defaultFallback = false;
+        $overwriteFallback = false;
+
+
         if ($lang === null) {
-            $lang = pluginApp(SessionStorageService::class)->getLang();
+            /** @var SessionStorageService $sessionStorage */
+            $sessionStorage = pluginApp(SessionStorageService::class);
+            if ($sessionStorage) {
+                $lang = $sessionStorage->getLang();
+            } else {
+                // TODO: get fallback language from webstore configuration
+                $lang = 'en';
+            }
         }
 
         /** @var Resources $resource */
@@ -63,22 +81,57 @@ class LocalizationService
         try {
             $default = $resource->load("$plugin::lang/$lang/$group")->getData();
         } catch (\Exception $e) {
-            // TODO: get fallback language from webstore configuration
-            $default = $resource->load("$plugin::lang/en/$group")->getData();
+            try {
+                // TODO: get fallback language from webstore configuration
+                $default = $resource->load("$plugin::lang/en/$group")->getData();
+                $defaultFallback = true;
+            } catch (\Exception $e) {
+                // default language file missing
+                $default = [];
+            }
         }
         $conf = $this->configRepository->get('IO.template');
+
+
+        /**
+         * {
+         * "tab"       : "Template",
+         * "key"       : "template.template_provider_plugin_name",
+         * "label"     : "Namespace of the used provider template plugin",
+         * "type"      : "text",
+         * "default"   : ""
+         * },
+         */
         $providerPlugin = $conf['template_provider_plugin_name'];
+
+
+        /**
+         * {
+         * "tab": "Template",
+         * "key": "template.disable_language_merge",
+         * "label": "Disable merging of language file",
+         * "type": "checkbox",
+         * "default": false
+         * },
+         */
         $disabled = $conf['disable_language_merge'];
-        if ($disabled != 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
+
+
+        if ($disabled !== 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
             try {
                 $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
             } catch (\Exception $e) {
-                // TODO: get fallback language from webstore configuration
-                $overwrite = $resource->load("$plugin::lang/en/$group")->getData();
+                try {
+                    // TODO: get fallback language from webstore configuration
+                    $overwrite = $resource->load("$providerPlugin::lang/en/$group")->getData();
+                    $overwriteFallback = true;
+                } catch (\Exception $e) {
+                    // default language file missing
+                    $overwrite = [];
+                }
             }
             return array_merge($default, $overwrite);
         }
-
         return $default;
     }
 }
