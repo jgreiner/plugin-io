@@ -78,20 +78,25 @@ class LocalizationService
         /** @var Resources $resource */
         $resource = pluginApp(Resources::class);
 
+        // fallback language
+        try {
+            $fallback = $resource->load("$plugin::lang/en/$group")->getData();
+        } catch (\Exception $e) {
+            $fallback = [];
+        }
+
+
+        // current language
+
         try {
             $default = $resource->load("$plugin::lang/$lang/$group")->getData();
         } catch (\Exception $e) {
-            try {
-                // TODO: get fallback language from webstore configuration
-                $default = $resource->load("$plugin::lang/en/$group")->getData();
-                $defaultFallback = true;
-            } catch (\Exception $e) {
-                // default language file missing
-                $default = [];
-            }
+            $default = $fallback;
+            $defaultFallback = true;
         }
-        $conf = $this->configRepository->get('IO.template');
 
+        // load conf
+        $conf = $this->configRepository->get('IO.template');
 
         /**
          * {
@@ -104,7 +109,6 @@ class LocalizationService
          */
         $providerPlugin = $conf['template_provider_plugin_name'];
 
-
         /**
          * {
          * "tab": "Template",
@@ -116,8 +120,15 @@ class LocalizationService
          */
         $disabled = $conf['disable_language_merge'];
 
+        $default = array_merge($default, $fallback);
+
 
         if ($disabled !== 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
+            try {
+                $overwriteFallbackData = $resource->load("$providerPlugin::lang/en/Template")->getData();
+            } catch (\Exception $e) {
+                $overwriteFallbackData = [];
+            }
             try {
                 $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
             } catch (\Exception $e) {
@@ -130,7 +141,7 @@ class LocalizationService
                     $overwrite = [];
                 }
             }
-            return array_merge($default, $overwrite);
+            return array_merge($default, array_merge($overwrite,$overwriteFallbackData));
         }
         return $default;
     }
