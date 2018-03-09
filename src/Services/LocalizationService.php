@@ -75,15 +75,22 @@ class LocalizationService
             }
         }
 
+        $fallbackLanguageCode = 'en';
+
         /** @var Resources $resource */
         $resource = pluginApp(Resources::class);
 
-        // fallback language
-        try {
-            $fallback = $resource->load("$plugin::lang/en/$group")->getData();
-        } catch (\Exception $e) {
-            $fallback = [];
+        $fallback = [];
+
+        if($fallbackLanguageCode !== $lang){
+            // fallback language
+            try {
+                $fallback = $resource->load("$plugin::lang/en/$group")->getData();
+            } catch (\Exception $e) {
+                $fallback = [];
+            }
         }
+
 
 
         // current language
@@ -124,10 +131,13 @@ class LocalizationService
 
 
         if ($disabled !== 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
-            try {
-                $overwriteFallbackData = $resource->load("$providerPlugin::lang/en/Template")->getData();
-            } catch (\Exception $e) {
-                $overwriteFallbackData = [];
+            $overwriteFallbackData = [];
+            if($fallbackLanguageCode !== $lang) {
+                try {
+                    $overwriteFallbackData = $resource->load("$providerPlugin::lang/en/Template")->getData();
+                } catch (\Exception $e) {
+                    $overwriteFallbackData = [];
+                }
             }
             try {
                 $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
