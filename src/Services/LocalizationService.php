@@ -59,48 +59,37 @@ class LocalizationService
      */
     public function getTranslations(string $plugin, string $group, $lang = null)
     {
-
-        $defaultFallback = false;
-        $overwriteFallback = false;
-
-
+        // TODO: get fallback language from webstore configuration
+        $fallbackLanguageCode = 'en';
         if ($lang === null) {
             /** @var SessionStorageService $sessionStorage */
             $sessionStorage = pluginApp(SessionStorageService::class);
             if ($sessionStorage) {
                 $lang = $sessionStorage->getLang();
             } else {
-                // TODO: get fallback language from webstore configuration
-                $lang = 'en';
+                $lang = $fallbackLanguageCode;
             }
         }
-
-        $fallbackLanguageCode = 'en';
-
         /** @var Resources $resource */
         $resource = pluginApp(Resources::class);
 
-        $fallback = [];
-
-        if($fallbackLanguageCode !== $lang){
-            // fallback language
+        // fallback language
+        $fallbackData = [];
+        if ($fallbackLanguageCode !== $lang) {
             try {
-                $fallback = $resource->load("$plugin::lang/en/$group")->getData();
+                $fallbackData = $resource->load("$plugin::lang/$fallbackLanguageCode/$group")->getData();
             } catch (\Exception $e) {
-                $fallback = [];
+                $fallbackData = [];
             }
         }
-
-
-
         // current language
-
         try {
-            $default = $resource->load("$plugin::lang/$lang/$group")->getData();
+            $defaultData = $resource->load("$plugin::lang/$lang/$group")->getData();
         } catch (\Exception $e) {
-            $default = $fallback;
-            $defaultFallback = true;
+            $defaultData = $fallbackData;
         }
+
+        $defaultData = array_merge($defaultData, $fallbackData);
 
         // load conf
         $conf = $this->configRepository->get('IO.template');
@@ -127,28 +116,23 @@ class LocalizationService
          */
         $disabled = $conf['disable_language_merge'];
 
-        $default = array_merge($default, $fallback);
-
 
         if ($disabled !== 'true' && $providerPlugin && $plugin === 'Ceres' && $group === 'Template') {
             $overwriteFallbackData = [];
-            if($fallbackLanguageCode !== $lang) {
+            if ($fallbackLanguageCode !== $lang) {
                 try {
-                    $overwriteFallbackData = $resource->load("$providerPlugin::lang/en/Template")->getData();
+                    $overwriteFallbackData = $resource->load("$providerPlugin::lang/$fallbackLanguageCode/Template")->getData();
                 } catch (\Exception $e) {
                     $overwriteFallbackData = [];
                 }
             }
             try {
-                $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
+                $overwriteData = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
             } catch (\Exception $e) {
-                // TODO: get fallback language from webstore configuration
-                $overwrite = $overwriteFallbackData;
-                $overwriteFallback = true;
-
+                $overwriteData = $overwriteFallbackData;
             }
-            return array_merge($default, array_merge($overwriteFallbackData, $overwrite));
+            return array_merge($defaultData, array_merge($overwriteFallbackData, $overwriteData));
         }
-        return $default;
+        return $defaultData;
     }
 }
