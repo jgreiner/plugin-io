@@ -132,16 +132,12 @@ class LocalizationService
             try {
                 $overwrite = $resource->load("$providerPlugin::lang/$lang/Template")->getData();
             } catch (\Exception $e) {
-                try {
-                    // TODO: get fallback language from webstore configuration
-                    $overwrite = $resource->load("$providerPlugin::lang/en/$group")->getData();
-                    $overwriteFallback = true;
-                } catch (\Exception $e) {
-                    // default language file missing
-                    $overwrite = [];
-                }
+                // TODO: get fallback language from webstore configuration
+                $overwrite = $overwriteFallbackData;
+                $overwriteFallback = true;
+
             }
-            return array_merge($default, array_merge($overwrite,$overwriteFallbackData));
+            return array_merge($default, array_merge($overwriteFallbackData, $overwrite));
         }
         return $default;
     }
