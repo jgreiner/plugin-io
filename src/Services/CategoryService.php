@@ -305,7 +305,7 @@ class CategoryService
      * @param int|null $maxLevel The deepest category level to load
      * @return array
      */
-    public function getNavigationTree(string $type = "all", string $lang = null, int $maxLevel = 2):array
+    public function getNavigationTree(string $type = "all", string $lang = null, int $maxLevel = 2, $c = null):array
     {
         if ( $lang === null )
         {
